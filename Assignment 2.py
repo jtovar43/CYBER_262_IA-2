@@ -4,7 +4,7 @@
 
 from prettytable import PrettyTable
 
-######################## BEGIN OUTPUT A #############################
+# Prep input and output files
 output_file = open('Output.txt', 'w')
 
 file_path = 'Log-A.strace'
@@ -17,35 +17,28 @@ workingFile = open(file_path, 'r')
 logContentB = workingFile.readlines()
 workingFile.close()
 
+######################## BEGIN OUTPUT A #############################
 tableA = PrettyTable()
-fileReadEventsA = 0
-keyReadEventsA = 0
-pipeReadEventsA = 0
-fileReadEventsB = 0
-keyReadEventsB = 0
-pipeReadEventsB = 0
 
-for line in logContentA:
-    if "read" in line and "tty" not in line and "pipe" not in line:
-        fileReadEventsA += 1
-    if "read" in line and 'tty' in line:
-        keyReadEventsA += 1
-    if "read" in line and 'pipe' in line:
-        pipeReadEventsA += 1
-    
-for line in logContentB:
-    if "read" in line and "tty" not in line and "pipe" not in line:
-        fileReadEventsB += 1
-    if "read" in line and 'tty' in line:
-        keyReadEventsB += 1
-    if "read" in line and 'pipe' in line:
-        pipeReadEventsB += 1
+def getReadEvents(content):
+    fileCount = 0
+    keyCount = 0
+    pipeCount = 0
+    for line in content:
+        if "read" in line and "tty" not in line and "pipe" not in line:
+            fileCount += 1
+        if "read" in line and 'tty' in line:
+            keyCount += 1
+        if "read" in line and 'pipe' in line:
+            pipeCount += 1
+    readEvents = [fileCount, keyCount, pipeCount]
+    return readEvents
 
 tableA.title = "Output A Results"
 tableA.field_names = ["Event Type", "A", "B"]
-tableA.add_row(['File Read Events', fileReadEventsA, fileReadEventsB])
-tableA.add_row(['Keyboard Read Events', keyReadEventsA, keyReadEventsB])
-tableA.add_row(["Read from Pipe Events", pipeReadEventsA, pipeReadEventsB])
+tableA.add_row(['File Read Events', getReadEvents(logContentA)[0], getReadEvents(logContentB)[0]])
+tableA.add_row(['Keyboard Read Events', getReadEvents(logContentA)[1], getReadEvents(logContentB)[1]])
+tableA.add_row(['Read from Pipe Events', getReadEvents(logContentA)[2], getReadEvents(logContentB)[2]])
 
 print(tableA, file=output_file)
 
@@ -74,13 +67,6 @@ tableC = PrettyTable()
 tableC.title = "Output C Results"
 tableC.field_names = ["Name of Executable", "Log A Timestamp", "Log B Timestamp"]
 
-def storeEvents(content, keyword):
-    eventList = list()
-    for line in content:
-        if keyword in line:
-            eventList.append(line)
-    return eventList
-
 def getNameandTimestamp(content):
     execNamesAndTime = {}
     for line in content:
@@ -92,11 +78,32 @@ def getNameandTimestamp(content):
                 execNamesAndTime[name] = line[0:5]
     return execNamesAndTime
 
-print(getNameandTimestamp(logContentA))
-print(getNameandTimestamp(logContentB))
-
+for event in getNameandTimestamp(logContentA):
+    if event in getNameandTimestamp(logContentB):
+        tableC.add_row([event, getNameandTimestamp(logContentA)[event], getNameandTimestamp(logContentB)[event]])
+    else:
+        tableC.add_row([event, getNameandTimestamp(logContentA)[event], "absent"])
 
 print(tableC, file=output_file)
+
+######################## BEGIN OUTPUT D #############################
+tableD = PrettyTable()
+tableD.title = "Output D Results"
+
+def getUserEvents(content):
+    keystrokes = []
+    for line in content:
+        if ' read(' in line and 'tty' in line:
+            start = line.find('"')
+            end = line.find('"', start+1)
+            keystroke = line[start+1 : end]
+            keystrokes.append(keystroke)
+    return keystrokes
+
+print(tableD, file='output.txt')
+print("Log A Keystrokes", getUserEvents(logContentA))
+print("The user provides the following keystrokes to the console:")
+
 
 # Close output file
 output_file.close()
