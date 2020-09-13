@@ -87,9 +87,6 @@ for event in getNameandTimestamp(logContentA):
 print(tableC, file=output_file)
 
 ######################## BEGIN OUTPUT D #############################
-tableD = PrettyTable()
-tableD.title = "Output D Results"
-
 def getUserEvents(content):
     keystrokes = []
     for line in content:
@@ -100,10 +97,40 @@ def getUserEvents(content):
             keystrokes.append(keystroke)
     return keystrokes
 
-print(tableD, file='output.txt')
-print("Log A Keystrokes", getUserEvents(logContentA))
-print("The user provides the following keystrokes to the console:")
+def getConsoleEvent(content):
+    keystrokes = []
+    for line in content:
+        if 'tty' in line and ' write(' in line:
+            start = line.find('"')
+            end = line.find('"', start+1)
+            keystroke = line[start+1 : end]
+            keystrokes.append(keystroke)
+    return keystrokes
 
+print("\n\n\n---------------------Output D-------------------------", file=output_file)
+print("\nLog A keystrokes in order:", getUserEvents(logContentA), file=output_file)
+print("\nThe user provides the following keystrokes to the console:\n", file=output_file)
+for text in getUserEvents(logContentA):
+    print(text, end='', file=output_file)
+if not getConsoleEvent(logContentA):
+    pass
+else:
+    print("\n\nThe console displays the following message to the user:\n", file=output_file)
+    for text in getConsoleEvent(logContentA):
+        print(text, end='', file=output_file)
+
+######################## BEGIN OUTPUT E #############################
+print("\n\n\n---------------------Output E-------------------------", file=output_file)
+print("\nLog B keystrokes in order:", getUserEvents(logContentB), file=output_file)
+print("\nThe user provides the following keystrokes to the console:\n", file=output_file)
+for text in getUserEvents(logContentB):
+    print(text, end='', file=output_file)
+if not getConsoleEvent(logContentB):
+    pass
+else:
+    print("\n\nThe console displays the following message to the user:\n", file=output_file)
+    for text in getConsoleEvent(logContentB):
+        print(text, end='', file=output_file)
 
 # Close output file
 output_file.close()
